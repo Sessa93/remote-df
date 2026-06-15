@@ -1,4 +1,5 @@
-# Keep the build context small — only df/ and docker/ are needed.
+# Keep the build context small — only docker/ is needed.
+# DF assets are downloaded during the build.
 .git
 .gitignore
 .dockerignore
@@ -6,6 +7,7 @@ README.md
 LICENSE
 scripts/
 c2w/
+df/
 out/
 web/
 df.tar.bz2

@@ -9,28 +9,21 @@ if [ -z "${1:-}" ]; then
   exit 1
 fi
 REMOTE="$1"
-DF_URL="${DF_URL:-https://www.bay12games.com/dwarves/df_53_14_linux.tar.bz2}"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 
-echo "==> Ensuring DF assets + dirs on $REMOTE"
-ssh "$REMOTE" "
-  set -e
-  mkdir -p ~/wasm-df/docker ~/wasm-df/scripts ~/wasm-df/df
-  if [ ! -f ~/wasm-df/df/dwarfort ]; then
-    curl -sL '$DF_URL' -o /tmp/df.tar.bz2 && tar -xjf /tmp/df.tar.bz2 -C ~/wasm-df/df
-  fi
-"
+echo "==> Ensuring dirs on $REMOTE"
+ssh "$REMOTE" "mkdir -p ~/remote-df/docker ~/remote-df/scripts"
 
 echo "==> Syncing build files"
-scp -q "$HERE/docker/Dockerfile" "$REMOTE:~/wasm-df/docker/Dockerfile"
-scp -q "$HERE/docker/start.sh"   "$REMOTE:~/wasm-df/docker/start.sh"
-scp -q "$HERE/.dockerignore"     "$REMOTE:~/wasm-df/.dockerignore"
-scp -q "$HERE/scripts/remote-run.sh" "$REMOTE:~/wasm-df/scripts/remote-run.sh"
+scp -q "$HERE/docker/Dockerfile" "$REMOTE:~/remote-df/docker/Dockerfile"
+scp -q "$HERE/docker/start.sh"   "$REMOTE:~/remote-df/docker/start.sh"
+scp -q "$HERE/.dockerignore"     "$REMOTE:~/remote-df/.dockerignore"
+scp -q "$HERE/scripts/remote-run.sh" "$REMOTE:~/remote-df/scripts/remote-run.sh"
 
 echo "==> Building image natively on $REMOTE"
-ssh "$REMOTE" "cd ~/wasm-df && docker build -f docker/Dockerfile -t wasm-df:native ."
+ssh "$REMOTE" "cd ~/remote-df && docker build -f docker/Dockerfile -t remote-df:native ."
 
 echo "==> Starting container on $REMOTE"
-ssh "$REMOTE" "bash ~/wasm-df/scripts/remote-run.sh"
+ssh "$REMOTE" "bash ~/remote-df/scripts/remote-run.sh"
 
 echo "==> Done. Run ./scripts/connect.sh to tunnel + open it."

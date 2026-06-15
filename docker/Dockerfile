@@ -35,8 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libgl1 libglu1-mesa libgl1-mesa-dri \
       tigervnc-standalone-server tigervnc-common x11-utils x11-apps \
       websockify novnc \
-      procps imagemagick \
-    && rm -rf /var/lib/apt/lists/*
+      procps imagemagick \      curl ca-certificates \    && rm -rf /var/lib/apt/lists/*
 
 # A tiny window manager so the SDL window gets input focus (keyboard) and is
 # maximized to fill the screen. xdotool is for scripted demos/tests.
@@ -45,7 +44,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Game files (the closed-source binary + data + bundled .so libs).
-COPY df/ /opt/df/
+# Downloaded from Bay12 Games at build time.
+ARG DF_URL=https://www.bay12games.com/dwarves/df_53_14_linux.tar.bz2
+RUN mkdir -p /opt/df \
+    && curl -fsSL "$DF_URL" -o /tmp/df.tar.bz2 \
+    && tar -xjf /tmp/df.tar.bz2 -C /opt/df --strip-components=1 \
+    && rm /tmp/df.tar.bz2
 
 # Override the bundled/system SDL2 with our XInput2-free build (see stage 1).
 # DF loads this first via LD_LIBRARY_PATH=/opt/df; ABI-compatible with the

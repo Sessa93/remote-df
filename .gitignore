@@ -1,14 +1,6 @@
 # DF game distribution — closed-source binary + assets (~80 MB).
-# Downloaded at deploy time on the remote host (see scripts/deploy.sh).
-# Only track the open-source wrapper (g_src/), our config (prefs/), and
-# the init defaults that the Dockerfile patches.
-df/*
-!df/g_src/
-!df/prefs/
-!df/data/
-df/data/*
-!df/data/init/
-df/data/init/macros/
+# Downloaded from Bay12 Games during Docker build.
+df/
 
 # Downloaded tarballs
 df.tar.bz2
