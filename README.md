@@ -1,20 +1,15 @@
-# wasm-df — Dwarf Fortress in the Browser
+# remote-df — Dwarf Fortress in the Browser
 
 Play the classic (ASCII/2D) Linux build of [Dwarf Fortress](https://www.bay12games.com/dwarves/)
 in a web browser. DF runs as a Docker container on a remote x86-64 Linux host at
 full native speed and is streamed to your browser over noVNC.
-
-> **Why "wasm-df"?** The original goal was to compile DF to WebAssembly. That
-> turned out to be impossible — see [Why not WebAssembly?](#why-not-webassembly)
-> — so it runs natively and streams instead. Same "DF in a browser tab" result,
-> actually playable.
 
 ## Architecture
 
 ```
 Your machine                         Remote x86-64 Linux host (ssh <remote>)
 ┌──────────────────┐                 ┌─────────────────────────────────────────────┐
-│ Browser          │                 │ Docker container  wasm-df:native            │
+│ Browser          │                 │ Docker container  remote-df:native           │
 │  noVNC <canvas> ─┼── SSH tunnel ──▶│  websockify :6080 ─ Xvnc :5900              │
 │  localhost:6080  │   (loopback)    │     └─ Xvnc :99 ◀─ dwarfort (PRINT_MODE:2D) │
 └──────────────────┘                 │        saves → docker volume df_saves        │
@@ -48,15 +43,15 @@ container. Re-run it anytime to redeploy.
 
 ## Project Layout
 
-| Path | Purpose |
-|---|---|
-| [`docker/Dockerfile`](docker/Dockerfile) | Multi-stage amd64 image: custom SDL2 + DF + Xvnc + noVNC |
-| [`docker/start.sh`](docker/start.sh) | Container entrypoint: boots display stack, runs DF with auto-restart |
-| [`scripts/deploy.sh`](scripts/deploy.sh) | Build + run on the remote host (run from your machine) |
+| Path                                             | Purpose                                                              |
+| ------------------------------------------------ | -------------------------------------------------------------------- |
+| [`docker/Dockerfile`](docker/Dockerfile)         | Multi-stage amd64 image: custom SDL2 + DF + Xvnc + noVNC             |
+| [`docker/start.sh`](docker/start.sh)             | Container entrypoint: boots display stack, runs DF with auto-restart |
+| [`scripts/deploy.sh`](scripts/deploy.sh)         | Build + run on the remote host (run from your machine)               |
 | [`scripts/remote-run.sh`](scripts/remote-run.sh) | `docker run` with saves volume + restart policy (runs on the remote) |
-| [`scripts/connect.sh`](scripts/connect.sh) | SSH tunnel + open browser (run from your machine) |
-| [`df/g_src/`](df/g_src/) | Open-source platform/render wrapper (from Bay 12) |
-| [`df/prefs/init.txt`](df/prefs/init.txt) | Runtime overrides: 2D software render, no sound, FPS caps |
+| [`scripts/connect.sh`](scripts/connect.sh)       | SSH tunnel + open browser (run from your machine)                    |
+| [`df/g_src/`](df/g_src/)                         | Open-source platform/render wrapper (from Bay 12)                    |
+| [`df/prefs/init.txt`](df/prefs/init.txt)         | Runtime overrides: 2D software render, no sound, FPS caps            |
 
 ## How It Works
 
@@ -85,19 +80,19 @@ so worlds and fortresses survive redeploys.
 
 Environment variables for customization:
 
-| Variable | Default | Description |
-|---|---|---|
-| `GEOM` | `1280x800` | Virtual display resolution |
-| `VNC_PORT` | `5900` | VNC server port |
-| `WEB_PORT` | `6080` | noVNC web port |
-| `DF_URL` | *(bay12games link)* | DF download URL (for `deploy.sh`) |
+| Variable   | Default             | Description                       |
+| ---------- | ------------------- | --------------------------------- |
+| `GEOM`     | `1280x800`          | Virtual display resolution        |
+| `VNC_PORT` | `5900`              | VNC server port                   |
+| `WEB_PORT` | `6080`              | noVNC web port                    |
+| `DF_URL`   | _(bay12games link)_ | DF download URL (for `deploy.sh`) |
 
 ## Why Not WebAssembly?
 
 The DF engine ([`df/dwarfort`](df/)) is a **closed-source, stripped x86-64 ELF**;
 only the platform/render wrapper ([`df/g_src/`](df/g_src/)) is open. WASM
 compilation (Emscripten) needs source we don't have. The only WASM route would be
-emulating an x86-64 machine *in the browser* (container2wasm / qemu-wasm) — but
+emulating an x86-64 machine _in the browser_ (container2wasm / qemu-wasm) — but
 those only expose a serial terminal today, and running DF under emulation would be
 a slideshow. Running natively on a real Linux host and streaming is the only way
 to get smooth, graphical DF in a browser tab.
