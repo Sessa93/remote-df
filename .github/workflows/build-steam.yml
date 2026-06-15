@@ -1,8 +1,7 @@
-name: Build and publish classic edition
+name: Build and publish steam edition
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -31,10 +30,13 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=df-${{ env.DF_VERSION }}-classic
-            type=raw,value=classic
-            type=raw,value=latest
-            type=sha
+            type=raw,value=df-${{ env.DF_VERSION }}-steam
+            type=raw,value=steam
+
+      - name: Write Steam credentials
+        run: |
+          echo "${{ secrets.STEAM_USER }}" > /tmp/steam_user
+          echo "${{ secrets.STEAM_PASS }}" > /tmp/steam_pass
 
       - uses: docker/build-push-action@v6
         with:
@@ -44,6 +46,13 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            DF_EDITION=classic
+            DF_EDITION=steam
             DF_VERSION=${{ env.DF_VERSION }}
             DFHACK_VERSION=${{ env.DFHACK_VERSION }}
+          secrets: |
+            steam_user=/tmp/steam_user
+            steam_pass=/tmp/steam_pass
+
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f /tmp/steam_user /tmp/steam_pass
