@@ -51,7 +51,7 @@ ARG DF_VERSION=53_14
 ARG DF_URL=https://www.bay12games.com/dwarves/df_${DF_VERSION}_linux.tar.bz2
 RUN mkdir -p /opt/df \
     && curl -fsSL "$DF_URL" -o /tmp/df.tar.bz2 \
-    && tar -xjf /tmp/df.tar.bz2 -C /opt/df --strip-components=1 \
+    && tar -xjf /tmp/df.tar.bz2 -C /opt/df \
     && rm /tmp/df.tar.bz2
 LABEL df.version="${DF_VERSION}"
 
