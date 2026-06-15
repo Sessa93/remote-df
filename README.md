@@ -6,16 +6,8 @@ host at full native speed, streamed to your browser over noVNC with audio via HT
 
 | Classic | Steam (Premium) |
 | --- | --- |
-| ![Classic edition](docs/screenshots/classic-2.png) | ![Steam edition](docs/screenshots/steam-2.png) |
-
-<details>
-<summary>More screenshots</summary>
-
-| Classic — title screen | Steam — title screen |
-| --- | --- |
 | ![Classic title](docs/screenshots/classic-1.png) | ![Steam title](docs/screenshots/steam-1.png) |
-
-</details>
+| ![Classic gameplay](docs/screenshots/classic-2.png) | ![Steam gameplay](docs/screenshots/steam-2.png) |
 
 ## Architecture
 
@@ -76,26 +68,27 @@ include DFHack.
 
 ## CI / GitHub Actions
 
-| Workflow | Trigger | Description |
-| --- | --- | --- |
-| [`build.yml`](.github/workflows/build.yml) | Push to `main` | Builds classic edition, pushes to GHCR |
-| [`build-steam.yml`](.github/workflows/build-steam.yml) | Manual | Builds steam edition (needs `STEAM_USER`/`STEAM_PASS` secrets) |
-| [`deploy.yml`](.github/workflows/deploy.yml) | Manual | Deploys to a remote host via SSH (`DEPLOY_SSH_KEY` secret) |
+| Workflow                                               | Trigger        | Description                                                    |
+| ------------------------------------------------------ | -------------- | -------------------------------------------------------------- |
+| [`build.yml`](.github/workflows/build.yml)             | Push to `main` | Builds classic edition, pushes to GHCR                         |
+| [`build-steam.yml`](.github/workflows/build-steam.yml) | Manual         | Builds steam edition (needs `STEAM_USER`/`STEAM_PASS` secrets) |
+| [`deploy.yml`](.github/workflows/deploy.yml)           | Manual         | Deploys to a remote host via SSH (`DEPLOY_SSH_KEY` secret)     |
 
 Images are published to `ghcr.io/sessa93/remote-df` with tags:
+
 - `df-{VERSION}-classic`, `classic`, `latest` (classic)
 - `df-{VERSION}-steam`, `steam` (steam)
 
 ## Project Layout
 
-| Path | Purpose |
-| --- | --- |
-| [`docker/Dockerfile`](docker/Dockerfile) | Multi-stage amd64 image: custom SDL2 + DF + audio + Xvnc + noVNC |
-| [`docker/start.sh`](docker/start.sh) | Entrypoint: PulseAudio, ffmpeg audio stream, display stack, DF with auto-restart |
-| [`scripts/deploy.sh`](scripts/deploy.sh) | Deploy to remote host (classic: pull from GHCR; steam: build on remote) |
-| [`scripts/remote-run.sh`](scripts/remote-run.sh) | `docker run` with saves volume + restart policy (runs on the remote) |
-| [`scripts/connect.sh`](scripts/connect.sh) | SSH tunnel (VNC + audio) + open browser (run from your machine) |
-| [`df/g_src/`](df/g_src/) | Open-source platform/render wrapper (from Bay 12) |
+| Path                                             | Purpose                                                                          |
+| ------------------------------------------------ | -------------------------------------------------------------------------------- |
+| [`docker/Dockerfile`](docker/Dockerfile)         | Multi-stage amd64 image: custom SDL2 + DF + audio + Xvnc + noVNC                 |
+| [`docker/start.sh`](docker/start.sh)             | Entrypoint: PulseAudio, ffmpeg audio stream, display stack, DF with auto-restart |
+| [`scripts/deploy.sh`](scripts/deploy.sh)         | Deploy to remote host (classic: pull from GHCR; steam: build on remote)          |
+| [`scripts/remote-run.sh`](scripts/remote-run.sh) | `docker run` with saves volume + restart policy (runs on the remote)             |
+| [`scripts/connect.sh`](scripts/connect.sh)       | SSH tunnel (VNC + audio) + open browser (run from your machine)                  |
+| [`df/g_src/`](df/g_src/)                         | Open-source platform/render wrapper (from Bay 12)                                |
 
 ## How It Works
 
@@ -125,14 +118,14 @@ so worlds and fortresses survive redeploys.
 
 ## Configuration
 
-| Variable | Default | Description |
-| --- | --- | --- |
-| `GEOM` | `1280x800` | Virtual display resolution |
-| `VNC_PORT` | `5900` | VNC server port |
-| `WEB_PORT` | `6080` | noVNC web port |
-| `AUDIO_PORT` | `8080` | Audio stream port |
-| `DF_VERSION` | `53_14` | DF version (used in image tags and download URL) |
-| `DF_EDITION` | `classic` | `classic` or `steam` |
+| Variable     | Default    | Description                                      |
+| ------------ | ---------- | ------------------------------------------------ |
+| `GEOM`       | `1280x800` | Virtual display resolution                       |
+| `VNC_PORT`   | `5900`     | VNC server port                                  |
+| `WEB_PORT`   | `6080`     | noVNC web port                                   |
+| `AUDIO_PORT` | `8080`     | Audio stream port                                |
+| `DF_VERSION` | `53_14`    | DF version (used in image tags and download URL) |
+| `DF_EDITION` | `classic`  | `classic` or `steam`                             |
 
 ## Security
 
