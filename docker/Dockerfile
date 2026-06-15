@@ -35,7 +35,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libgl1 libglu1-mesa libgl1-mesa-dri \
       tigervnc-standalone-server tigervnc-common x11-utils x11-apps \
       websockify novnc \
-      procps imagemagick \      curl ca-certificates \    && rm -rf /var/lib/apt/lists/*
+      procps imagemagick \
+      curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # A tiny window manager so the SDL window gets input focus (keyboard) and is
 # maximized to fill the screen. xdotool is for scripted demos/tests.
