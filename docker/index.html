@@ -60,7 +60,9 @@
         cursor: pointer;
         white-space: nowrap;
       }
-      #play-btn:hover { background: #a87820; }
+      #play-btn:hover {
+        background: #a87820;
+      }
     </style>
   </head>
   <body>
@@ -74,23 +76,31 @@
     <div id="audio-bar">
       <span>&#x1F50A;</span>
       <audio id="audio-player" controls>
-        <source src="/audio" type="audio/ogg; codecs=opus">
+        <source src="/audio" type="audio/ogg; codecs=opus" />
       </audio>
-      <button id="play-btn" title="Click to enable audio (required by browser autoplay policy)">&#x25B6; Enable audio</button>
+      <button
+        id="play-btn"
+        title="Click to enable audio (required by browser autoplay policy)"
+      >
+        &#x25B6; Enable audio
+      </button>
     </div>
 
     <script>
-      const frame   = document.getElementById("vnc-frame");
-      const bar     = document.getElementById("audio-bar");
-      const player  = document.getElementById("audio-player");
+      const frame = document.getElementById("vnc-frame");
+      const bar = document.getElementById("audio-bar");
+      const player = document.getElementById("audio-player");
       const playBtn = document.getElementById("play-btn");
 
       // Try autoplay; show the manual play button only if the browser blocks it.
-      player.play().then(() => {
-        playBtn.style.display = "none";
-      }).catch(() => {
-        playBtn.style.display = "inline-block";
-      });
+      player
+        .play()
+        .then(() => {
+          playBtn.style.display = "none";
+        })
+        .catch(() => {
+          playBtn.style.display = "inline-block";
+        });
 
       playBtn.addEventListener("click", () => {
         player.play();
@@ -100,11 +110,15 @@
       // Give the noVNC iframe keyboard focus after it loads and on click
       // (except when interacting with the audio bar).
       frame.addEventListener("load", () => {
-        try { frame.contentWindow.focus(); } catch (_) {}
+        try {
+          frame.contentWindow.focus();
+        } catch (_) {}
       });
       document.addEventListener("click", (e) => {
         if (!bar.contains(e.target)) {
-          try { frame.contentWindow.focus(); } catch (_) {}
+          try {
+            frame.contentWindow.focus();
+          } catch (_) {}
         }
       });
     </script>

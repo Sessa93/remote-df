@@ -38,15 +38,15 @@ pactl set-default-sink virtual_out 2>/dev/null || true
 
 # --- Audio stream via ffmpeg ------------------------------------------------
 # Ogg/Opus: best cross-browser support (works in Firefox, Chrome, Edge).
-# Write to a named FIFO; nginx serves it via the /audio location.
-echo "[start] audio stream (Ogg/Opus via ffmpeg -> /tmp/audio.ogg fifo)"
-rm -f /tmp/audio.ogg
-mkfifo /tmp/audio.ogg
+# ffmpeg serves on internal :8080; nginx proxies it at /audio.
+echo "[start] audio stream (Ogg/Opus via ffmpeg on internal :8080)"
 ffmpeg -nostdin -f pulse -i virtual_out.monitor \
   -ac 2 -b:a 96k -c:a libopus -f ogg \
   -page_duration 200000 \
-  - > /tmp/audio.ogg \
-  2>/var/log/df/audio.log &
+  -content_type audio/ogg \
+  -listen 1 -multiple_requests 1 \
+  "http://0.0.0.0:8080" \
+  >/var/log/df/audio.log 2>&1 &
 
 echo "[start] Xvnc ${GEOM} on :99 (rfb :$VNC_PORT)"
 Xvnc :99 -geometry "$GEOM" -depth 24 \
