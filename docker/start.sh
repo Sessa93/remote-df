@@ -46,8 +46,12 @@ echo "[start] launching Dwarf Fortress via DFHack (PRINT_MODE:2D, SOUND:NO); aut
 cd /opt/df
 (
   while true; do
-    LD_LIBRARY_PATH=/opt/df ./dfhack >>/var/log/df/df.log 2>&1
-    echo "[start] !!! dfhack exited rc=$? — restarting in 2s" >>/var/log/df/df.log
+    # Load DFHack via LD_PRELOAD directly, bypassing the dfhack launcher
+    # script whose setarch call fails in Docker (no SYS_ADMIN capability).
+    LD_PRELOAD=./hack/libdfhack.so \
+    LD_LIBRARY_PATH=/opt/df:./hack/libs:./hack \
+      ./dwarfort >>/var/log/df/df.log 2>&1
+    echo "[start] !!! dwarfort+dfhack exited rc=$? — restarting in 2s" >>/var/log/df/df.log
     sleep 2
   done
 ) &

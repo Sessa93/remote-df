@@ -86,6 +86,7 @@ RUN chmod +x /usr/local/bin/start.sh
 
 EXPOSE 5900 6080
 ENV DISPLAY=:99 \
+    TERM=xterm \
     SDL_VIDEODRIVER=x11 \
     SDL_AUDIODRIVER=dummy \
     SDL_RENDER_DRIVER=software \
