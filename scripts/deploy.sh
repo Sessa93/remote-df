@@ -25,6 +25,6 @@ echo "==> Building image natively on $REMOTE (DF $DF_VERSION)"
 ssh "$REMOTE" "cd ~/remote-df && docker build --build-arg DF_VERSION=$DF_VERSION -f docker/Dockerfile -t remote-df:df-$DF_VERSION ."
 
 echo "==> Starting container on $REMOTE"
-ssh "$REMOTE" "bash ~/remote-df/scripts/remote-run.sh"
+ssh "$REMOTE" "DF_VERSION=$DF_VERSION bash ~/remote-df/scripts/remote-run.sh"
 
 echo "==> Done. Run ./scripts/connect.sh to tunnel + open it."

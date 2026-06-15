@@ -4,7 +4,8 @@
 set -euo pipefail
 
 NAME="${NAME:-df}"
-IMAGE="${IMAGE:-remote-df:native}"
+DF_VERSION="${DF_VERSION:-53_14}"
+IMAGE="${IMAGE:-remote-df:df-${DF_VERSION}}"
 WEB_PORT="${WEB_PORT:-6080}"
 VNC_PORT="${VNC_PORT:-5900}"
 
