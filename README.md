@@ -170,7 +170,8 @@ generates correctly.
 ### Persistent Saves
 
 Saves are bind-mounted from a host directory on the remote (`DF_SAVES_DIR`,
-default `~/remote-df/saves`) to `/opt/df/data/save` in the container — so worlds
+default `~/remote-df/saves`) to `/opt/df/save` in the container (DF v50's save
+location) — so worlds
 and fortresses live on disk, survive redeploys, and can be backed up or copied
 with ordinary file tools (no `docker volume` plumbing).
 

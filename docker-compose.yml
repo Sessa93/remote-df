@@ -26,7 +26,7 @@ x-common: &common
     # Bind mount to a host directory so saves live on disk (easy to back up),
     # not inside a docker-managed volume. Path is relative to this compose file
     # unless DF_SAVES_DIR is set to an absolute path.
-    - "${DF_SAVES_DIR:-./saves}:/opt/df/data/save"
+    - "${DF_SAVES_DIR:-./saves}:/opt/df/save"
   environment:
     GEOM: "${GEOM:-1280x800}"
   stop_grace_period: 10s

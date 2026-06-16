@@ -50,7 +50,7 @@ jobs:
               --restart unless-stopped \
               -p "127.0.0.1:6080:6080" \
               -p "127.0.0.1:5900:5900" \
-              -v "\$SAVES_DIR:/opt/df/data/save" \
+              -v "\$SAVES_DIR:/opt/df/save" \
               "${IMAGE}"
 
             echo "==> Container '\$NAME' is up (loopback only). Saves: \$SAVES_DIR"
