@@ -6,6 +6,8 @@
 README.md
 LICENSE
 scripts/
+docker-compose.yml
+secrets/
 c2w/
 df/
 out/

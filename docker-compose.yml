@@ -1,0 +1,68 @@
+# Docker Compose for remote-df — run ON the remote x86-64 Linux host.
+#
+# Mirrors scripts/remote-run.sh: persistent saves, loopback-only ports (reach
+# it via an SSH tunnel — see scripts/connect.sh), auto-restart.
+#
+# Classic edition (default — builds locally or pulls from GHCR):
+#   docker compose up -d                     # build + run
+#   IMAGE=ghcr.io/sessa93/remote-df:df-53_14 docker compose up -d --pull always
+#
+# Steam edition (builds on this host; SteamCMD needs native x86_64):
+#   write the credential files first, then:
+#   echo myuser > secrets/steam_user && echo mypass > secrets/steam_pass
+#   echo ABC123 > secrets/steam_guard        # empty unless Steam Guard 2FA is on
+#   docker compose up -d --build df-steam     # name the service (don't use --profile)
+#
+# Common overrides (env or .env file): DF_VERSION, GEOM, WEB_PORT, VNC_PORT.
+
+x-common: &common
+  restart: unless-stopped
+  # Bound to 127.0.0.1 only — nothing is exposed publicly. Tunnel in via SSH.
+  ports:
+    - "127.0.0.1:${WEB_PORT:-6080}:6080"
+    - "127.0.0.1:${VNC_PORT:-5900}:5900"
+  volumes:
+    - df_saves:/opt/df/data/save
+  environment:
+    GEOM: "${GEOM:-1280x800}"
+  stop_grace_period: 10s
+
+services:
+  # Classic edition (default): free download from Bay12 at build time (+ DFHack).
+  df:
+    <<: *common
+    image: "${IMAGE:-remote-df:df-${DF_VERSION:-53_14}}"
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        DF_VERSION: "${DF_VERSION:-53_14}"
+        DF_EDITION: classic
+
+  # Steam edition: premium version via SteamCMD. Credentials are passed as
+  # BuildKit secrets (files under ./secrets/) and never stored in the image.
+  df-steam:
+    <<: *common
+    profiles: ["steam"]
+    image: "remote-df:df-${DF_VERSION:-53_14}-steam"
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        DF_VERSION: "${DF_VERSION:-53_14}"
+        DF_EDITION: steam
+      secrets:
+        - steam_user
+        - steam_pass
+        - steam_guard
+
+secrets:
+  steam_user:
+    file: ./secrets/steam_user
+  steam_pass:
+    file: ./secrets/steam_pass
+  steam_guard:
+    file: ./secrets/steam_guard
+
+volumes:
+  df_saves:

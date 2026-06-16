@@ -46,6 +46,28 @@ through an SSH tunnel.
 #    → Audio stream: http://localhost:8080
 ```
 
+## Docker Compose
+
+If you prefer Compose over the scripts, run this **on the remote host** (it mirrors
+`remote-run.sh` — loopback-only ports, `df_saves` volume, auto-restart):
+
+```bash
+# Classic — build locally and run
+docker compose up -d
+
+# …or pull the pre-built image from GHCR instead of building
+IMAGE=ghcr.io/sessa93/remote-df:df-53_14 docker compose up -d --pull always
+
+# Steam — build on the host (SteamCMD needs native x86_64)
+echo myuser > secrets/steam_user
+echo mypass > secrets/steam_pass
+echo ''     > secrets/steam_guard   # or the 2FA code if Steam Guard is on
+docker compose up -d --build df-steam
+```
+
+Then tunnel in from your machine with `./scripts/connect.sh <host>`. Override
+`DF_VERSION`, `GEOM`, `WEB_PORT`, or `VNC_PORT` via the environment or a `.env` file.
+
 ## Steam Edition
 
 If you own Dwarf Fortress on Steam, you can use the premium version instead:
