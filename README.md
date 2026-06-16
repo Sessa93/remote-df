@@ -68,6 +68,36 @@ docker compose up -d --build df-steam
 Then tunnel in from your machine with `./scripts/connect.sh <host>`. Override
 `DF_VERSION`, `GEOM`, `WEB_PORT`, or `VNC_PORT` via the environment or a `.env` file.
 
+### Example: full classic deploy with Compose
+
+```bash
+# --- on the remote x86-64 host ---
+git clone https://github.com/sessa93/remote-df.git && cd remote-df
+
+# Optional: pin settings instead of passing them inline each time
+cat > .env <<'EOF'
+DF_VERSION=53_14
+GEOM=1600x900
+WEB_PORT=6080
+EOF
+
+docker compose up -d            # build the image and start the container
+docker compose logs -f df       # watch DF / Xvnc / audio boot (Ctrl-C to detach)
+
+# --- back on your local machine ---
+./scripts/connect.sh my-vps     # SSH tunnel + open the browser
+#   → http://localhost:6080/
+```
+
+Day-to-day:
+
+```bash
+docker compose ps               # is it up?
+docker compose restart df       # bounce it
+IMAGE=ghcr.io/sessa93/remote-df:df-53_14 docker compose up -d --pull always  # update from GHCR
+docker compose down             # stop & remove (saves persist in the df_saves volume)
+```
+
 ## Steam Edition
 
 If you own Dwarf Fortress on Steam, you can use the premium version instead:

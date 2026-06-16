@@ -32,6 +32,7 @@ services:
   df:
     <<: *common
     image: "${IMAGE:-remote-df:df-${DF_VERSION:-53_14}}"
+    restart: unless-stopped
     build:
       context: .
       dockerfile: docker/Dockerfile
@@ -45,6 +46,7 @@ services:
     <<: *common
     profiles: ["steam"]
     image: "remote-df:df-${DF_VERSION:-53_14}-steam"
+    restart: unless-stopped
     build:
       context: .
       dockerfile: docker/Dockerfile
