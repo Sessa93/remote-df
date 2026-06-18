@@ -1,0 +1,94 @@
+:root {
+  --bg: #14110d;
+  --panel: #1d1813;
+  --panel-2: #251f18;
+  --border: #3a3128;
+  --text: #e8dcc8;
+  --muted: #9a8c76;
+  --accent: #c89a3a;
+  --accent-2: #8b6914;
+  --green: #4caf50;
+  --red: #c0563f;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.topbar {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 12px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.brand { color: var(--accent); font-weight: 700; font-size: 16px; }
+.subtitle { color: var(--muted); }
+
+.container { max-width: 960px; margin: 0 auto; padding: 20px; }
+
+h2 { color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+section { margin-bottom: 32px; }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.spacer { flex: 1; }
+
+label { display: block; color: var(--muted); margin: 8px 0 2px; }
+input, select, textarea {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font: inherit;
+  width: 100%;
+}
+.field { margin-bottom: 8px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+button {
+  background: var(--accent-2);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font: inherit;
+  cursor: pointer;
+}
+button:hover { background: var(--accent); }
+button.secondary { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); }
+button.danger { background: var(--red); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+a { color: var(--accent); }
+code, pre {
+  background: #0d0b08;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 5px;
+}
+pre { padding: 10px; overflow: auto; white-space: pre-wrap; }
+
+.badge { padding: 1px 8px; border-radius: 10px; font-size: 12px; border: 1px solid var(--border); }
+.badge.running { color: var(--green); border-color: var(--green); }
+.badge.stopped { color: var(--muted); }
+
+.muted { color: var(--muted); }
+.error { color: var(--red); }
+.checks { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.checks label { display: flex; align-items: center; gap: 6px; color: var(--text); margin: 0; }
+.checks input { width: auto; }

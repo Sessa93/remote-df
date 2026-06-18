@@ -1,0 +1,12 @@
+/node_modules
+/.next
+/out
+/build
+*.tsbuildinfo
+next-env.d.ts.timestamp
+.env
+.env.local
+# Local instance data (saves/backups/mods/tilesets) when running the panel here.
+/data
+npm-debug.log*
+.DS_Store

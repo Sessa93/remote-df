@@ -1,0 +1,31 @@
+# Control-panel sidecar. Run on the same host as Docker. It talks to the host
+# Docker daemon (mounted socket) to spawn/manage DF containers, and stores
+# instance data + uploaded mods/tilesets under ./data.
+#
+#   cp .env.example .env   # set HOST_DATA_ROOT to the ABSOLUTE host path of ./data
+#   docker compose up -d --build
+#   ssh -N -L 7070:localhost:7070 <ssh-host>   # then open http://localhost:7070
+#
+# SECURITY: mounting the Docker socket grants root-equivalent control of the
+# host. Keep this loopback-only and reach it over SSH (as above) — never expose
+# it publicly without auth/TLS in front.
+
+services:
+  control-panel:
+    build: .
+    image: remote-df-control-panel:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PANEL_PORT:-7070}:7070"
+    environment:
+      DF_IMAGE: "${DF_IMAGE:-remote-df:df-53_14}"
+      DATA_ROOT: /data
+      # MUST be the absolute host path of ./data (Docker resolves the spawned
+      # containers' bind sources on the host, not inside this container).
+      HOST_DATA_ROOT: "${HOST_DATA_ROOT:?set HOST_DATA_ROOT to the absolute host path of ./data}"
+      BASE_PORT: "${BASE_PORT:-6090}"
+      DF_CPUS: "${DF_CPUS:-2.0}"
+      DF_MEMORY: "${DF_MEMORY:-3g}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/data
