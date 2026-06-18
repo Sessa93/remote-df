@@ -62,6 +62,83 @@ Spawn an instance; its card shows the per-instance tunnel command
 port lives on the **daemon's** host, which may differ from the panel's host when
 using a remote daemon.
 
+## Testing
+
+**Prerequisite (all paths):** the `DF_IMAGE` must exist on the **target daemon's**
+host. Build it once from the repo root (classic shown):
+
+```bash
+docker build -f docker/Dockerfile -t remote-df:df-53_14 .
+# (steam: add --build-arg DF_EDITION=steam + secrets, tag remote-df:df-53_14-steam,
+#  and set DF_IMAGE to match)
+```
+
+### Path A — fastest feedback (panel in dev mode, local daemon)
+
+Run the panel directly on a machine with Docker; it uses the local socket.
+
+```bash
+cd control-panel
+npm install
+npm run dev            # http://localhost:7070
+```
+
+Then in the browser: upload a mod `.zip`, **Spawn** an instance (e.g. `test`),
+and watch it appear. Verify from a shell:
+
+```bash
+docker ps --filter label=remote-df.managed=true     # df-test, port 6090->6080
+curl -fsS localhost:6090/ >/dev/null && echo "noVNC up"
+open http://localhost:6090/                          # or visit it manually
+# mod landed inside the container?
+docker exec df-test sh -lc 'ls -la "/root/.local/share/Bay 12 Games/Dwarf Fortress/mods"'
+```
+
+Click **Logs** on the card (or `docker logs df-test`), then **Stop** / **Start** /
+**Remove**. Removing keeps the `df-test-saves` volume, so re-spawning `test`
+restores the fort (`docker volume ls | grep df-test`).
+
+### Path B — panel as a container, local daemon
+
+Same as *Run it* above (`docker compose up -d --build`, `DOCKER_HOST` empty). This
+exercises the Docker-socket mount. Reach it at `http://localhost:7070` (tunnel if
+the host is remote) and repeat the Path A checks.
+
+### Path C — remote daemon
+
+On a machine with Docker (e.g. your laptop), point the panel at the remote host
+over SSH and confirm it spawns **there**:
+
+```bash
+cd control-panel
+cp .env.example .env
+# .env:
+#   DOCKER_HOST=ssh://ubuntu@<remote-host>
+#   DOCKER_SSH_KEY=/keys/id           # mount your key (see compose) — or use an agent
+#   DF_IMAGE=remote-df:df-53_14       # must already exist on <remote-host>
+docker compose up -d --build
+```
+
+Spawn an instance in the UI, then verify it really landed on the remote host:
+
+```bash
+ssh ubuntu@<remote-host> 'docker ps --filter label=remote-df.managed=true'
+# reach the game (port is on the REMOTE host):
+ssh -N -L 6090:localhost:6090 ubuntu@<remote-host>   # then open http://localhost:6090
+```
+
+> SSH note: the key/known-hosts must let the panel connect non-interactively.
+> Easiest first test is an `ssh://` host you can already `ssh` into with the key
+> in `DOCKER_SSH_KEY`.
+
+### What "good" looks like
+
+- The dashboard header shows the right target (`unix://…` or your `DOCKER_HOST`).
+- Spawning creates a `df-<name>` container on the **target** daemon with port
+  `BASE_PORT+n`, and `curl <port>/` returns 200.
+- Uploaded mods appear under the container's mods dir; saves survive
+  stop→start and instance removal (named volume).
+
 ## Configuration
 
 | Variable            | Default              | Description                                        |
