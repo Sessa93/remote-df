@@ -1,7 +1,8 @@
 import "server-only";
-import Docker from "dockerode";
+import type Docker from "dockerode";
 import path from "node:path";
-import fs from "node:fs/promises";
+import tarFs from "tar-fs";
+import { docker } from "./dockerClient";
 import {
   config,
   CONTAINER_SAVE_DIR,
@@ -11,8 +12,6 @@ import {
   memoryToBytes,
 } from "./config";
 
-const docker = new Docker({ socketPath: config.dockerSocket });
-
 export type Instance = {
   id: string;
   name: string;
@@ -20,7 +19,6 @@ export type Instance = {
   webPort: number;
   state: string; // running | exited | created | ...
   status: string; // human-readable ("Up 3 minutes")
-  health?: string;
   createdAt: number;
 };
 
@@ -49,7 +47,7 @@ function toInstance(c: Docker.ContainerInfo): Instance {
 }
 
 export async function listInstances(): Promise<Instance[]> {
-  const containers = await docker.listContainers({
+  const containers = await docker().listContainers({
     all: true,
     filters: { label: [`${LABELS.managed}=true`] },
   });
@@ -63,17 +61,6 @@ async function nextFreePort(): Promise<number> {
   let p = config.basePort;
   while (used.has(p)) p += 1;
   return p;
-}
-
-// Build host-path bind specs for selected mod/tileset asset folders. Each asset
-// folder is mounted read-only under the container's mods dir.
-function assetBinds(kind: "mods" | "tilesets", names: string[]): string[] {
-  return (names || []).map((name) => {
-    const safe = path.basename(name); // never escape the asset dir
-    const hostSrc = path.posix.join(config.hostDataRoot, kind, safe);
-    const target = `${CONTAINER_MODS_DIR}/${safe}`;
-    return `${hostSrc}:${target}:ro`;
-  });
 }
 
 export async function spawnInstance(opts: SpawnOptions): Promise<Instance> {
@@ -92,23 +79,13 @@ export async function spawnInstance(opts: SpawnOptions): Promise<Instance> {
   const edition = opts.edition === "steam" ? "steam" : "classic";
   const webPort = await nextFreePort();
 
-  // Per-instance host directories for persistent saves + backups.
-  const savesHost = path.posix.join(config.hostDataRoot, "instances", name, "saves");
-  const backupsHost = path.posix.join(config.hostDataRoot, "instances", name, "backups");
-  // Create them via the panel's own view of the shared volume.
-  const savesLocal = path.join(config.dataRoot, "instances", name, "saves");
-  const backupsLocal = path.join(config.dataRoot, "instances", name, "backups");
-  await fs.mkdir(savesLocal, { recursive: true });
-  await fs.mkdir(backupsLocal, { recursive: true });
+  // Named volumes (managed by the target daemon, so this works whether the
+  // daemon is local or remote). Reusing a name keeps a prior fort's saves.
+  const savesVol = `${containerName}-saves`;
+  const backupsVol = `${containerName}-backups`;
 
-  const binds = [
-    `${savesHost}:${CONTAINER_SAVE_DIR}`,
-    `${backupsHost}:${CONTAINER_BACKUP_DIR}`,
-    ...assetBinds("mods", opts.mods || []),
-    ...assetBinds("tilesets", opts.tilesets || []),
-  ];
-
-  const container = await docker.createContainer({
+  const d = docker();
+  const container = await d.createContainer({
     Image: config.dfImage,
     name: containerName,
     Labels: {
@@ -123,7 +100,10 @@ export async function spawnInstance(opts: SpawnOptions): Promise<Instance> {
     ],
     ExposedPorts: { "6080/tcp": {} },
     HostConfig: {
-      Binds: binds,
+      Binds: [
+        `${savesVol}:${CONTAINER_SAVE_DIR}`,
+        `${backupsVol}:${CONTAINER_BACKUP_DIR}`,
+      ],
       PortBindings: {
         "6080/tcp": [{ HostIp: "127.0.0.1", HostPort: String(webPort) }],
       },
@@ -135,33 +115,89 @@ export async function spawnInstance(opts: SpawnOptions): Promise<Instance> {
   });
 
   await container.start();
+
+  // Stream selected mods/tilesets into the running container (no host paths —
+  // works against a remote daemon). Best-effort: a failure here shouldn't kill
+  // an otherwise-running instance.
+  const assets = [
+    ...(opts.mods || []).map((n) => ({ kind: "mods" as const, name: n })),
+    ...(opts.tilesets || []).map((n) => ({ kind: "tilesets" as const, name: n })),
+  ];
+  if (assets.length) {
+    try {
+      await injectAssets(container, assets);
+    } catch (err) {
+      console.error(`[spawn] asset injection failed for ${containerName}:`, err);
+    }
+  }
+
   return (await listInstances()).find((i) => i.id === container.id)!;
 }
 
-async function byId(id: string) {
-  return docker.getContainer(id);
+// Copy asset folders into the container under CONTAINER_MODS_DIR/<name> via the
+// Docker API (putArchive), creating the mods dir first.
+async function injectAssets(
+  container: Docker.Container,
+  assets: { kind: "mods" | "tilesets"; name: string }[],
+): Promise<void> {
+  await execInContainer(container, ["mkdir", "-p", CONTAINER_MODS_DIR]);
+  for (const { kind, name } of assets) {
+    const safe = path.basename(name);
+    const src = path.join(config.dataRoot, kind, safe);
+    // Prefix every tar entry with the asset folder name so it lands at
+    // CONTAINER_MODS_DIR/<name>/...
+    const pack = tarFs.pack(src, {
+      map: (header) => {
+        header.name = path.posix.join(safe, header.name);
+        return header;
+      },
+    });
+    await container.putArchive(pack, { path: CONTAINER_MODS_DIR });
+  }
+}
+
+async function execInContainer(
+  container: Docker.Container,
+  Cmd: string[],
+): Promise<void> {
+  const exec = await container.exec({
+    Cmd,
+    AttachStdout: true,
+    AttachStderr: true,
+  });
+  const stream = await exec.start({});
+  await new Promise<void>((resolve, reject) => {
+    stream.on("end", resolve);
+    stream.on("error", reject);
+    stream.resume();
+  });
+}
+
+function byId(id: string) {
+  return docker().getContainer(id);
 }
 
 export async function startInstance(id: string) {
-  await (await byId(id)).start();
+  await byId(id).start();
 }
 
 export async function stopInstance(id: string) {
-  await (await byId(id)).stop({ t: 10 });
+  await byId(id).stop({ t: 10 });
 }
 
+// Remove the container. Named volumes (saves/backups) are intentionally kept so
+// re-spawning the same name restores the fort.
 export async function removeInstance(id: string) {
-  await (await byId(id)).remove({ force: true });
+  await byId(id).remove({ force: true });
 }
 
 // Last lines of the container's stdout/stderr (the entrypoint tails DF logs).
 export async function instanceLogs(id: string, tail = 200): Promise<string> {
-  const buf = (await (await byId(id)).logs({
+  const buf = (await byId(id).logs({
     stdout: true,
     stderr: true,
     tail,
   })) as unknown as Buffer;
-  // Strip Docker's 8-byte stream multiplexing headers if present.
   return stripDockerLogHeader(buf);
 }
 

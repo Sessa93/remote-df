@@ -1,14 +1,18 @@
-# Control-panel sidecar. Run on the same host as Docker. It talks to the host
-# Docker daemon (mounted socket) to spawn/manage DF containers, and stores
-# instance data + uploaded mods/tilesets under ./data.
+# Control-panel sidecar. It talks to a Docker daemon (local socket OR a remote
+# daemon via DOCKER_HOST) to spawn/manage DF containers, and stores uploaded
+# mods/tilesets under ./data.
 #
-#   cp .env.example .env   # set HOST_DATA_ROOT to the ABSOLUTE host path of ./data
+#   cp .env.example .env
 #   docker compose up -d --build
 #   ssh -N -L 7070:localhost:7070 <ssh-host>   # then open http://localhost:7070
 #
-# SECURITY: mounting the Docker socket grants root-equivalent control of the
-# host. Keep this loopback-only and reach it over SSH (as above) — never expose
-# it publicly without auth/TLS in front.
+# LOCAL daemon: leave DOCKER_HOST empty; the socket below is mounted in.
+# REMOTE daemon: set DOCKER_HOST=tcp://host:2376 (+ TLS) or ssh://user@host in
+# .env. The socket mount is then unused/harmless; for ssh, also mount your key
+# and set DOCKER_SSH_KEY to its in-container path.
+#
+# SECURITY: a Docker connection (socket or remote) is root-equivalent on the
+# target host. Keep this panel loopback-only and reach it over SSH.
 
 services:
   control-panel:
@@ -18,14 +22,21 @@ services:
     ports:
       - "127.0.0.1:${PANEL_PORT:-7070}:7070"
     environment:
+      DOCKER_HOST: "${DOCKER_HOST:-}"
+      DOCKER_TLS_VERIFY: "${DOCKER_TLS_VERIFY:-}"
+      DOCKER_CERT_PATH: "${DOCKER_CERT_PATH:-}"
+      DOCKER_SSH_KEY: "${DOCKER_SSH_KEY:-}"
       DF_IMAGE: "${DF_IMAGE:-remote-df:df-53_14}"
       DATA_ROOT: /data
-      # MUST be the absolute host path of ./data (Docker resolves the spawned
-      # containers' bind sources on the host, not inside this container).
-      HOST_DATA_ROOT: "${HOST_DATA_ROOT:?set HOST_DATA_ROOT to the absolute host path of ./data}"
       BASE_PORT: "${BASE_PORT:-6090}"
       DF_CPUS: "${DF_CPUS:-2.0}"
       DF_MEMORY: "${DF_MEMORY:-3g}"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      # Uploaded mods/tilesets persist here (panel-local; streamed to instances).
       - ./data:/data
+      # Local-daemon access. Unused when DOCKER_HOST points at a remote daemon.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # For DOCKER_HOST=ssh://… mount your key and set DOCKER_SSH_KEY to match:
+      # - ./id_ed25519:/keys/id:ro
+      # For tcp:// + TLS, mount your cert dir and set DOCKER_CERT_PATH:
+      # - ./certs:/certs:ro

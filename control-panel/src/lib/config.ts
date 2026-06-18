@@ -1,15 +1,25 @@
 // Central runtime config, read from the environment (see .env.example).
 
 export const config = {
+  // --- Docker connection ---------------------------------------------------
+  // If DOCKER_HOST is unset we use the local socket. Otherwise it may be:
+  //   unix:///var/run/docker.sock
+  //   tcp://HOST:2376        (+ DOCKER_TLS_VERIFY=1 and DOCKER_CERT_PATH for TLS)
+  //   ssh://user@HOST[:22]   (+ DOCKER_SSH_KEY=/path/to/key, or an SSH agent)
+  dockerHost: process.env.DOCKER_HOST || "",
   dockerSocket: process.env.DOCKER_SOCKET || "/var/run/docker.sock",
+  dockerTlsVerify: process.env.DOCKER_TLS_VERIFY === "1",
+  dockerCertPath: process.env.DOCKER_CERT_PATH || "",
+  dockerSshKey: process.env.DOCKER_SSH_KEY || "",
+
+  // Image used for spawned DF instances. Match what you built/deployed.
   dfImage: process.env.DF_IMAGE || "remote-df:df-53_14",
 
-  // DATA_ROOT: path inside THIS container. HOST_DATA_ROOT: same dir on the host.
-  // Bind-mount sources for spawned containers must use the HOST path, because
-  // the host's Docker daemon resolves them — not this container's filesystem.
+  // Where the panel stores uploaded mods/tilesets (local to THIS container).
+  // No host-path coupling: assets are streamed into instances over the Docker
+  // API, and saves/backups use named volumes — so this works with a remote
+  // daemon too.
   dataRoot: process.env.DATA_ROOT || "/data",
-  hostDataRoot:
-    process.env.HOST_DATA_ROOT || process.env.DATA_ROOT || "/data",
 
   basePort: Number(process.env.BASE_PORT || 6090),
   dfCpus: process.env.DF_CPUS || "2.0",
@@ -20,7 +30,7 @@ export const config = {
 export const CONTAINER_SAVE_DIR =
   "/root/.local/share/Bay 12 Games/Dwarf Fortress/save";
 export const CONTAINER_BACKUP_DIR = "/backups";
-// Where uploaded mods/tilesets get mounted. DF v50 reads installed mods from
+// Where uploaded mods/tilesets are injected. DF v50 reads installed mods from
 // the XDG mods dir. Adjust per edition/version if needed.
 export const CONTAINER_MODS_DIR =
   "/root/.local/share/Bay 12 Games/Dwarf Fortress/mods";
