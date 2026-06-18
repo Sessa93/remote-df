@@ -6,6 +6,7 @@
 README.md
 LICENSE
 scripts/
+control-panel/
 docker-compose.yml
 secrets/
 saves/

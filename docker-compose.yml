@@ -12,6 +12,10 @@
 #   echo ABC123 > secrets/steam_guard        # empty unless Steam Guard 2FA is on
 #   docker compose up -d --build df-steam     # name the service (don't use --profile)
 #
+# Control panel (opt-in sidecar):
+#   docker compose --profile panel up -d --build control-panel
+#   (overrides: PANEL_PORT, DOCKER_HOST, BASE_PORT — see control-panel/README.md)
+#
 # Saves persist on disk at ${DF_SAVES_DIR:-./saves}; periodic backup tarballs at
 # ${DF_BACKUPS_DIR:-./backups} (both relative to this file). Common overrides
 # (env or .env file): DF_VERSION, GEOM, WEB_PORT, VNC_PORT, DF_SAVES_DIR,
@@ -83,6 +87,38 @@ services:
         - steam_user
         - steam_pass
         - steam_guard
+
+  # Control-panel sidecar (opt-in): a Next.js UI that talks to the Docker daemon
+  # to spawn/manage DF instances and mods/tilesets. Not started by default —
+  # bring it up with:  docker compose --profile panel up -d --build control-panel
+  # Reach it over an SSH tunnel:  ssh -N -L 7070:localhost:7070 <host>
+  # See control-panel/README.md (esp. the DOCKER_HOST / remote-daemon notes).
+  control-panel:
+    profiles: ["panel"]
+    build:
+      context: ./control-panel
+      dockerfile: Dockerfile
+    image: remote-df-control-panel:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${PANEL_PORT:-7070}:7070"
+    environment:
+      # Empty = local daemon via the mounted socket below. Point at a remote
+      # daemon with tcp://host:2376 (+TLS) or ssh://user@host instead.
+      DOCKER_HOST: "${DOCKER_HOST:-}"
+      DOCKER_TLS_VERIFY: "${DOCKER_TLS_VERIFY:-}"
+      DOCKER_CERT_PATH: "${DOCKER_CERT_PATH:-}"
+      DOCKER_SSH_KEY: "${DOCKER_SSH_KEY:-}"
+      DF_IMAGE: "${IMAGE:-remote-df:df-${DF_VERSION:-53_14}}"
+      DATA_ROOT: /data
+      BASE_PORT: "${BASE_PORT:-6090}"
+      DF_CPUS: "${DF_CPUS:-2.0}"
+      DF_MEMORY: "${DF_MEMORY:-3g}"
+    volumes:
+      # Uploaded mods/tilesets persist here (streamed into spawned instances).
+      - ./control-panel/data:/data
+      # Local-daemon access; unused when DOCKER_HOST points at a remote daemon.
+      - /var/run/docker.sock:/var/run/docker.sock
 
 secrets:
   steam_user:
